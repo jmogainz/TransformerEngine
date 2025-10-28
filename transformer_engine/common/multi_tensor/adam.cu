@@ -392,8 +392,15 @@ struct AdamCapturableFunctor {
 
     float beta1_correction = 1.0f, beta2_correction = 1.0f;
     if (bias_correction == 1) {
-      beta1_correction = 1 - pow(beta1, *step);
-      beta2_correction = 1 - pow(beta2, *step);
+      __shared__ float s_beta1_corr;
+      __shared__ float s_beta2_corr;
+      if (threadIdx.x == 0) {
+        s_beta1_corr = 1 - pow(beta1, *step);
+        s_beta2_corr = 1 - pow(beta2, *step);
+      }
+      __syncthreads();
+      beta1_correction = s_beta1_corr;
+      beta2_correction = s_beta2_corr;
     }
 
     int tensor_loc = tl.block_to_tensor[blockIdx.x];
@@ -486,8 +493,15 @@ struct AdamCapturableMasterFunctor {
 
     float beta1_correction = 1.0f, beta2_correction = 1.0f;
     if (bias_correction == 1) {
-      beta1_correction = 1 - pow(beta1, *step);
-      beta2_correction = 1 - pow(beta2, *step);
+      __shared__ float s_beta1_corr;
+      __shared__ float s_beta2_corr;
+      if (threadIdx.x == 0) {
+        s_beta1_corr = 1 - pow(beta1, *step);
+        s_beta2_corr = 1 - pow(beta2, *step);
+      }
+      __syncthreads();
+      beta1_correction = s_beta1_corr;
+      beta2_correction = s_beta2_corr;
     }
 
     int tensor_loc = tl.block_to_tensor[blockIdx.x];
