@@ -47,7 +47,11 @@ at::Tensor fp8_transpose(at::Tensor input, DType otype, std::optional<at::Tensor
   // Compute transpose
   auto input_cu = makeTransformerEngineTensor(input.data_ptr(), std::vector<size_t>{M, N}, otype);
   auto output_cu = makeTransformerEngineTensor(out.data_ptr(), std::vector<size_t>{N, M}, otype);
-  nvte_transpose(input_cu.data(), output_cu.data(), at::cuda::getCurrentCUDAStream());
+  
+  // Release GIL for CUDA kernel launch
+  NVTE_SCOPED_GIL_RELEASE({
+    nvte_transpose(input_cu.data(), output_cu.data(), at::cuda::getCurrentCUDAStream());
+  });
 
   return out;
 }
@@ -72,7 +76,11 @@ at::Tensor swap_first_dims(at::Tensor tensor, std::optional<at::Tensor> out) {
   // Launch kernel
   const TensorWrapper te_input = makeTransformerEngineTensor(input);
   TensorWrapper te_output = makeTransformerEngineTensor(*out);
-  nvte_swap_first_dims(te_input.data(), te_output.data(), at::cuda::getCurrentCUDAStream());
+  
+  // Release GIL for CUDA kernel launch
+  NVTE_SCOPED_GIL_RELEASE({
+    nvte_swap_first_dims(te_input.data(), te_output.data(), at::cuda::getCurrentCUDAStream());
+  });
 
   return std::move(*out);
 }
